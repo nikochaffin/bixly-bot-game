@@ -1,5 +1,5 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../bower_components/iron-a11y-keys-behavior/iron-a11y-keys-behavior.html">
+<link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 
 <dom-module id="bixly-bot-app">
   <template>
@@ -7,8 +7,35 @@
       :host {
         display: block;
       }
+      .key {
+        display: inline-block;
+        border: 1px solid #e0e0e0;
+        width: 20px;
+        line-height: 20px;
+        text-align: center;
+      }
+      .key:first-child {
+        margin-left: 20px;
+      }
+      .key.active {
+        color: #673AB7;
+        border-color: #673AB7;
+      }
     </style>
+
+    <iron-a11y-keys
+        id="downKeys"
+        keys="up:keydown down:keydown left:keydown right:keydown"
+        on-keys-pressed="_onDirectionDown"></iron-a11y-keys>
+    <iron-a11y-keys
+        id="upKeys"
+        keys="up:keyup up:keyup left:keyup right:keyup"
+        on-keys-pressed="_onDirectionUp"></iron-a11y-keys>
     <h2>Hello [[prop1]]</h2>
+    <p>
+      <code class$="[[keys.up]] key">&uarr;</code><br>
+      <code class$="[[keys.left]] key">&larr;</code><code class$="[[keys.down]] key">&darr;</code><code class$="[[keys.right]] key">&rarr;</code>
+    </p>
   </template>
 
   <script>
@@ -16,11 +43,40 @@
 
       is: 'bixly-bot-app',
 
+      behaviors: [
+        Polymer.IronA11yKeysBehavior,
+      ],
+
       properties: {
         prop1: {
           type: String,
           value: 'bixly-bot-app',
         },
+        keys: {
+          up: false,
+          down: false,
+          left: false,
+          right: false,
+        }
+      },
+
+      _onDirectionDown: function(e, detail) {
+        console.log("key down:", detail.keyboardEvent.key);
+      },
+
+      _onDirectionUp: function(e, detail) {
+        console.log("key up:", detail.keyboardEvent.key);
+      },
+
+      _getClass: function(key) {
+        if (this.key[key]) {
+          return "active";
+        }
+      }
+
+      ready: function() {
+        this.$.upKeys.target = document.querySelector('body');
+        this.$.downKeys.target = document.querySelector('body');
       },
 
     });
