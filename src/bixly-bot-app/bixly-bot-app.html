@@ -21,21 +21,44 @@
         color: #673AB7;
         border-color: #673AB7;
       }
+      .key.wide {
+        width: 100px;
+      }
+
+      .square {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        margin-top: -25px;
+        margin-left: -25px;
+        width: 50px;
+        height: 50px;
+        background-color: red;
+      }
     </style>
 
+    <!-- <iron-a11y-keys
+        id="jumpKey"
+        keys="space"
+        on-keys-pressed="_spacePressed"></iron-a11y-keys> -->
     <iron-a11y-keys
         id="downKeys"
-        keys="up:keydown down:keydown left:keydown right:keydown"
+        keys="up:keydown down:keydown left:keydown right:keydown space:keydown"
         on-keys-pressed="_onDirectionDown"></iron-a11y-keys>
     <iron-a11y-keys
         id="upKeys"
-        keys="up:keyup up:keyup left:keyup right:keyup"
+        keys="up:keyup down:keyup left:keyup right:keyup space:keyup"
         on-keys-pressed="_onDirectionUp"></iron-a11y-keys>
     <h2>Hello [[prop1]]</h2>
     <p>
-      <code class$="[[keys.up]] key">&uarr;</code><br>
-      <code class$="[[keys.left]] key">&larr;</code><code class$="[[keys.down]] key">&darr;</code><code class$="[[keys.right]] key">&rarr;</code>
+      <code class$="[[_getActiveClass(keysActive.up)]] key">&uarr;</code><br>
+      <code class$="[[_getActiveClass(keysActive.left)]] key">&larr;</code><code class$="[[_getActiveClass(keysActive.down)]] key">&darr;</code><code class$="[[_getActiveClass(keysActive.right)]] key">&rarr;</code>
+      <code class$="[[_getActiveClass(keysActive.space)]] key wide">space</code>
     </p>
+
+    <div class="square" style$="transform: translate3d([[ coords.x ]]px, [[ coords.y ]]px, 0);"></div>
+
+    [[ coords.x ]], [[ coords.y ]]
   </template>
 
   <script>
@@ -52,31 +75,142 @@
           type: String,
           value: 'bixly-bot-app',
         },
-        keys: {
-          up: false,
-          down: false,
-          left: false,
-          right: false,
+        keysActive: {
+          type: Object,
+          value: {
+            up: false,
+            down: false,
+            left: false,
+            right: false,
+            space: false,
+          }
+        },
+        coords: {
+          type: Object,
+          value: {
+            x: 0,
+            y: 0,
+          }
+        },
+      },
+
+      _setAllKeysInactive: function() {
+        for (var key in this.keysActive) {
+          this.set(['keysActive', key], false);
         }
+      },
+
+      _getKeyFromEventName: function(name) {
+        // TODO: need to account for when meta keys are pressed while
+        // releasing other keys
+        var keyNames = {
+          "ArrowUp": 'up',
+          "ArrowDown": 'down',
+          "ArrowLeft": 'left',
+          "ArrowRight": 'right',
+          " ": "space",
+        }
+        return keyNames[name];
       },
 
       _onDirectionDown: function(e, detail) {
-        console.log("key down:", detail.keyboardEvent.key);
+        e.preventDefault();
+        var key = this._getKeyFromEventName(detail.keyboardEvent.key);
+        if (key && this.get(['keysActive', key]) !== undefined) {
+          this.set(['keysActive', key], true);
+          this.notifyPath('keysActive.' + key);
+        }
       },
 
       _onDirectionUp: function(e, detail) {
-        console.log("key up:", detail.keyboardEvent.key);
+        e.preventDefault();
+        var key = this._getKeyFromEventName(detail.keyboardEvent.key);
+        if (key && this.get(['keysActive', key]) !== undefined) {
+          this.set(['keysActive', key], false);
+          this.notifyPath('keysActive.' + key);
+        }
       },
 
-      _getClass: function(key) {
-        if (this.key[key]) {
+      _getActiveClass: function(val) {
+        if (val === true) {
           return "active";
         }
-      }
+        return "";
+      },
+
+      _startJump: function() {
+        if (!this.jumping) {
+          this.set('jumping', true);
+          this.set('jumpFrame', 10);
+        }
+      },
+
+      _updateCoords: function() {
+        if (!document.hasFocus()) {
+          this._queueNextFrame();
+          this._setAllKeysInactive();
+          return;
+        }
+
+        var distance = 4;
+        if (this.keysActive.up || this.keysActive.down) {
+          distance = 2.5;
+        }
+        if (this.keysActive.left && !this.keysActive.right) {
+          this.set('coords.x', this.coords.x - distance);
+        } else if (this.keysActive.right && !this.keysActive.left) {
+          this.set('coords.x', this.coords.x + distance);
+        }
+
+        if (this.keysActive.space) {
+          this._startJump();
+        }
+
+        if (this.jumping) {
+          var y = this.coords.y;
+          var diff = 0;
+          var frame = this.jumpFrame;
+          var negative = false;
+          if (frame !== 0) {
+            if (frame < 0) {
+              negative = true;
+              frame *= -1;
+            }
+          }
+          diff = Math.sqrt(frame) * 4;
+          if (negative) {
+            diff *= -1;
+          }
+          // console.log(this.jumpFrame, frame, diff);
+          if (frame > -10) {
+            this.set('jumpFrame', this.jumpFrame - 1);
+          }
+          // console.log(y, diff);
+          y -= diff;
+
+          // Ground detection
+          if (y > 0) {
+            y = 0;
+            this.set('jumping', false);
+          }
+          this.set('coords.y', y);
+        }
+
+        this._queueNextFrame();
+      },
+
+      _queueNextFrame: function() {
+        var _this = this;
+        this.async(function() {
+          _this._updateCoords();
+        }, 15);
+      },
 
       ready: function() {
         this.$.upKeys.target = document.querySelector('body');
         this.$.downKeys.target = document.querySelector('body');
+        // this.$.jumpKey.target = document.querySelector('body');
+        this._updateCoords();
       },
 
     });
