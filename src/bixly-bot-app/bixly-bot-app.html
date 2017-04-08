@@ -1,6 +1,8 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 
+<link rel="import" href="../level-stage/level-stage.html">
+
 <dom-module id="bixly-bot-app">
   <template>
     <style>
@@ -29,11 +31,28 @@
         position: absolute;
         left: 50%;
         top: 50%;
-        margin-top: -25px;
-        margin-left: -25px;
+        margin-top: -50px;
         width: 50px;
         height: 50px;
         background-color: red;
+      }
+
+      .backdrop-frame {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+
+      .backdrop {
+        position: absolute;
+        top: 50%;
+        height: 300px;
+        left: 50%;
+        background-image: linear-gradient(to right, rgba(0, 0, 0, 0.1) 50%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.1)), linear-gradient(to right, #5fa51f, #616b36);
+        background-size: 50px 100%, 100%;
+        background-repeat: repeat-x;
       }
     </style>
 
@@ -49,16 +68,23 @@
         id="upKeys"
         keys="up:keyup down:keyup left:keyup right:keyup space:keyup"
         on-keys-pressed="_onDirectionUp"></iron-a11y-keys>
-    <h2>Hello [[prop1]]</h2>
-    <p>
+
+    <p style="width:300px;margin:0 auto;">
       <code class$="[[_getActiveClass(keysActive.up)]] key">&uarr;</code><br>
       <code class$="[[_getActiveClass(keysActive.left)]] key">&larr;</code><code class$="[[_getActiveClass(keysActive.down)]] key">&darr;</code><code class$="[[_getActiveClass(keysActive.right)]] key">&rarr;</code>
       <code class$="[[_getActiveClass(keysActive.space)]] key wide">space</code>
     </p>
+    <p style="width:300px;margin:0 auto;">
+      [[ coords.x ]], [[ coords.y ]]
+    </p>
 
-    <div class="square" style$="transform: translate3d([[ coords.x ]]px, [[ coords.y ]]px, 0);"></div>
+    <!-- <div class="backdrop-frame">
+      <div class="player square" style$="transform: translate3d([[ coords.x ]]px, [[ coords.y ]]px, 0);"></div>
+      <div class="backdrop" style$="width:[[ levelWidth ]]px;"></div>
+    </div> -->
 
-    [[ coords.x ]], [[ coords.y ]]
+    <level-stage player-width="[[ playerWidth ]]" level-width="[[ levelWidth ]]" player-coords="{{ coords }}"></level-stage>
+
   </template>
 
   <script>
@@ -90,8 +116,25 @@
           value: {
             x: 0,
             y: 0,
-          }
+          },
+          observer: '_onPlayerCoordsChange',
+          notify: true,
         },
+        playerWidth: {
+          type: Number,
+          value: 50,
+        },
+        levelWidth: {
+          type: Number,
+          value: 2000,
+        },
+        screenWidth: {
+          type: Number,
+        }
+      },
+
+      _onPlayerCoordsChange: function(coords) {
+        // console.log(coords);
       },
 
       _setAllKeysInactive: function() {
@@ -156,11 +199,21 @@
         if (this.keysActive.up || this.keysActive.down) {
           distance = 2.5;
         }
+        var x = this.coords.x;
+        var xDiff = 0;
         if (this.keysActive.left && !this.keysActive.right) {
-          this.set('coords.x', this.coords.x - distance);
+          xDiff = 0 - distance;
         } else if (this.keysActive.right && !this.keysActive.left) {
-          this.set('coords.x', this.coords.x + distance);
+          xDiff = 0 + distance;
         }
+        x += xDiff;
+
+        if (x < 0) {
+          x = 0;
+        } else if (x + this.playerWidth > this.levelWidth) {
+          x = this.levelWidth - this.playerWidth;
+        }
+        this.set('coords.x', x);
 
         if (this.keysActive.space) {
           this._startJump();
@@ -168,7 +221,7 @@
 
         if (this.jumping) {
           var y = this.coords.y;
-          var diff = 0;
+          var yDiff = 0;
           var frame = this.jumpFrame;
           var negative = false;
           if (frame !== 0) {
@@ -177,16 +230,16 @@
               frame *= -1;
             }
           }
-          diff = Math.sqrt(frame) * 4;
+          yDiff = Math.sqrt(frame) * 4;
           if (negative) {
-            diff *= -1;
+            yDiff *= -1;
           }
-          // console.log(this.jumpFrame, frame, diff);
+          // console.log(this.jumpFrame, frame, yDiff);
           if (frame > -10) {
             this.set('jumpFrame', this.jumpFrame - 1);
           }
-          // console.log(y, diff);
-          y -= diff;
+          // console.log(y, yDiff);
+          y -= yDiff;
 
           // Ground detection
           if (y > 0) {
