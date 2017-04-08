@@ -1,5 +1,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
+<link rel="import" href="level-stage-coords-manager.html">
+
 <dom-module id="level-stage">
   <template>
     <style>
@@ -32,8 +34,16 @@
       }
     </style>
 
+    <level-stage-coords-manager player-inputs="[[ playerInputs ]]"
+                                level-width="[[ levelWidth ]]"
+                                player-coords="{{ playerCoords }}"></level-stage-coords-manager>
+
+    <p style="width:300px;margin:0 auto;">
+      <code>[[ playerCoords.x ]], [[ playerCoords.y ]]</code>
+    </p>
+
     <div class="backdrop-frame" style$="transform: translate3d([[ _stageXTranslate ]], 0, 0);">
-      <div class="player square" style$="width:[[ playerWidth ]]px; transform: translate3d([[ playerCoords.x ]]px, [[ playerCoords.y ]]px, 0);"></div>
+      <div class$="player square" style$="width:[[ playerWidth ]]px; transform: translate3d([[ playerCoords.x ]]px, [[ playerCoords.y ]]px, 0);"></div>
       <div class="backdrop" style$="width:[[ levelWidth ]]px;"></div>
     </div>
   </template>
@@ -41,6 +51,9 @@
   Polymer({
     is: 'level-stage',
     properties: {
+      playerInputs: {
+        type: Object,
+      },
       playerCoords: {
         type: Object,
         value: {
@@ -58,7 +71,7 @@
       },
       levelWidth: {
         type: Number,
-        value: 1000,
+        value: 2000,
       },
       screenWidth: {
         type: Number,

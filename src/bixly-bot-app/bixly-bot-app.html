@@ -1,6 +1,6 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 
+<link rel="import" href="../player-input-manager/player-input-manager.html">
 <link rel="import" href="../level-stage/level-stage.html">
 
 <dom-module id="bixly-bot-app">
@@ -9,81 +9,13 @@
       :host {
         display: block;
       }
-      .key {
-        display: inline-block;
-        border: 1px solid #e0e0e0;
-        width: 20px;
-        line-height: 20px;
-        text-align: center;
-      }
-      .key:first-child {
-        margin-left: 20px;
-      }
-      .key.active {
-        color: #673AB7;
-        border-color: #673AB7;
-      }
-      .key.wide {
-        width: 100px;
-      }
-
-      .square {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        margin-top: -50px;
-        width: 50px;
-        height: 50px;
-        background-color: red;
-      }
-
-      .backdrop-frame {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-      }
-
-      .backdrop {
-        position: absolute;
-        top: 50%;
-        height: 300px;
-        left: 50%;
-        background-image: linear-gradient(to right, rgba(0, 0, 0, 0.1) 50%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.1)), linear-gradient(to right, #5fa51f, #616b36);
-        background-size: 50px 100%, 100%;
-        background-repeat: repeat-x;
-      }
     </style>
 
-    <!-- <iron-a11y-keys
-        id="jumpKey"
-        keys="space"
-        on-keys-pressed="_spacePressed"></iron-a11y-keys> -->
-    <iron-a11y-keys
-        id="downKeys"
-        keys="up:keydown down:keydown left:keydown right:keydown space:keydown"
-        on-keys-pressed="_onDirectionDown"></iron-a11y-keys>
-    <iron-a11y-keys
-        id="upKeys"
-        keys="up:keyup down:keyup left:keyup right:keyup space:keyup"
-        on-keys-pressed="_onDirectionUp"></iron-a11y-keys>
+    <player-input-manager player-inputs="{{ playerInputs }}"></player-input-manager>
 
-    <p style="width:300px;margin:0 auto;">
-      <code class$="[[_getActiveClass(keysActive.up)]] key">&uarr;</code><br>
-      <code class$="[[_getActiveClass(keysActive.left)]] key">&larr;</code><code class$="[[_getActiveClass(keysActive.down)]] key">&darr;</code><code class$="[[_getActiveClass(keysActive.right)]] key">&rarr;</code>
-      <code class$="[[_getActiveClass(keysActive.space)]] key wide">space</code>
-    </p>
-    <p style="width:300px;margin:0 auto;">
-      [[ coords.x ]], [[ coords.y ]]
-    </p>
-
-    <!-- <div class="backdrop-frame">
-      <div class="player square" style$="transform: translate3d([[ coords.x ]]px, [[ coords.y ]]px, 0);"></div>
-      <div class="backdrop" style$="width:[[ levelWidth ]]px;"></div>
-    </div> -->
-
-    <level-stage player-width="[[ playerWidth ]]" level-width="[[ levelWidth ]]" player-coords="{{ coords }}"></level-stage>
+    <level-stage player-inputs="[[ playerInputs ]]"
+                 player-width="[[ playerWidth ]]"
+                 player-coords="{{ coords }}"></level-stage>
 
   </template>
 
@@ -92,178 +24,11 @@
 
       is: 'bixly-bot-app',
 
-      behaviors: [
-        Polymer.IronA11yKeysBehavior,
-      ],
-
       properties: {
         prop1: {
           type: String,
           value: 'bixly-bot-app',
         },
-        keysActive: {
-          type: Object,
-          value: {
-            up: false,
-            down: false,
-            left: false,
-            right: false,
-            space: false,
-          }
-        },
-        coords: {
-          type: Object,
-          value: {
-            x: 0,
-            y: 0,
-          },
-          observer: '_onPlayerCoordsChange',
-          notify: true,
-        },
-        playerWidth: {
-          type: Number,
-          value: 50,
-        },
-        levelWidth: {
-          type: Number,
-          value: 2000,
-        },
-        screenWidth: {
-          type: Number,
-        }
-      },
-
-      _onPlayerCoordsChange: function(coords) {
-        // console.log(coords);
-      },
-
-      _setAllKeysInactive: function() {
-        for (var key in this.keysActive) {
-          this.set(['keysActive', key], false);
-        }
-      },
-
-      _getKeyFromEventName: function(name) {
-        // TODO: need to account for when meta keys are pressed while
-        // releasing other keys
-        var keyNames = {
-          "ArrowUp": 'up',
-          "ArrowDown": 'down',
-          "ArrowLeft": 'left',
-          "ArrowRight": 'right',
-          " ": "space",
-        }
-        return keyNames[name];
-      },
-
-      _onDirectionDown: function(e, detail) {
-        e.preventDefault();
-        var key = this._getKeyFromEventName(detail.keyboardEvent.key);
-        if (key && this.get(['keysActive', key]) !== undefined) {
-          this.set(['keysActive', key], true);
-          this.notifyPath('keysActive.' + key);
-        }
-      },
-
-      _onDirectionUp: function(e, detail) {
-        e.preventDefault();
-        var key = this._getKeyFromEventName(detail.keyboardEvent.key);
-        if (key && this.get(['keysActive', key]) !== undefined) {
-          this.set(['keysActive', key], false);
-          this.notifyPath('keysActive.' + key);
-        }
-      },
-
-      _getActiveClass: function(val) {
-        if (val === true) {
-          return "active";
-        }
-        return "";
-      },
-
-      _startJump: function() {
-        if (!this.jumping) {
-          this.set('jumping', true);
-          this.set('jumpFrame', 10);
-        }
-      },
-
-      _updateCoords: function() {
-        if (!document.hasFocus()) {
-          this._queueNextFrame();
-          this._setAllKeysInactive();
-          return;
-        }
-
-        var distance = 4;
-        if (this.keysActive.up || this.keysActive.down) {
-          distance = 2.5;
-        }
-        var x = this.coords.x;
-        var xDiff = 0;
-        if (this.keysActive.left && !this.keysActive.right) {
-          xDiff = 0 - distance;
-        } else if (this.keysActive.right && !this.keysActive.left) {
-          xDiff = 0 + distance;
-        }
-        x += xDiff;
-
-        if (x < 0) {
-          x = 0;
-        } else if (x + this.playerWidth > this.levelWidth) {
-          x = this.levelWidth - this.playerWidth;
-        }
-        this.set('coords.x', x);
-
-        if (this.keysActive.space) {
-          this._startJump();
-        }
-
-        if (this.jumping) {
-          var y = this.coords.y;
-          var yDiff = 0;
-          var frame = this.jumpFrame;
-          var negative = false;
-          if (frame !== 0) {
-            if (frame < 0) {
-              negative = true;
-              frame *= -1;
-            }
-          }
-          yDiff = Math.sqrt(frame) * 4;
-          if (negative) {
-            yDiff *= -1;
-          }
-          // console.log(this.jumpFrame, frame, yDiff);
-          if (frame > -10) {
-            this.set('jumpFrame', this.jumpFrame - 1);
-          }
-          // console.log(y, yDiff);
-          y -= yDiff;
-
-          // Ground detection
-          if (y > 0) {
-            y = 0;
-            this.set('jumping', false);
-          }
-          this.set('coords.y', y);
-        }
-
-        this._queueNextFrame();
-      },
-
-      _queueNextFrame: function() {
-        var _this = this;
-        this.async(function() {
-          _this._updateCoords();
-        }, 15);
-      },
-
-      ready: function() {
-        this.$.upKeys.target = document.querySelector('body');
-        this.$.downKeys.target = document.querySelector('body');
-        // this.$.jumpKey.target = document.querySelector('body');
-        this._updateCoords();
       },
 
     });

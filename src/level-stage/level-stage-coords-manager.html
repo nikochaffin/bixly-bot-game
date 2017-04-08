@@ -1,0 +1,139 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="level-stage-coords-manager">
+  <script>
+    Polymer({
+      is: 'level-stage-coords-manager',
+      properties: {
+        playerInputs: {
+          type: Object,
+          value: {},
+          notify: true,
+        },
+        playerCoords: {
+          type: Object,
+          value: {
+            x: 0,
+            y: 0,
+          },
+          observer: '_onPlayerCoordsChange',
+          notify: true,
+        },
+        playerWidth: {
+          type: Number,
+          value: 50,
+        },
+        levelWidth: {
+          type: Number,
+        },
+        screenWidth: {
+          type: Number,
+        }
+      },
+
+      _onPlayerCoordsChange: function(e, detail) {
+        // console.log(detail);
+      },
+
+      _startJump: function() {
+        if (!this.jumping) {
+          this.set('jumping', true);
+          this.set('jumpFrame', 10);
+        }
+      },
+
+      _setAllKeysInactive: function() {
+        for (var key in this.playerInputs) {
+          this.set(['playerInputs', key], false);
+        }
+      },
+
+      _managePlayerX: function() {
+        var distance = 4;
+        if (this.playerInputs.up || this.playerInputs.down) {
+          distance = 2.5;
+        }
+        var x = this.playerCoords.x;
+        var xDiff = 0;
+        var movingLeft = (this.playerInputs.left && !this.playerInputs.right);
+        var movingRight = (this.playerInputs.right && !this.playerInputs.left);
+        if (movingLeft) {
+          xDiff = 0 - distance;
+        } else if (movingRight) {
+          xDiff = 0 + distance;
+        }
+        x += xDiff;
+        if (xDiff) {
+          
+        }
+
+        if (x < 0) {
+          x = 0;
+        } else if (x + this.playerWidth > this.levelWidth) {
+          x = this.levelWidth - this.playerWidth;
+        }
+        this.set('playerCoords.x', x);
+      },
+
+      _managePlayerY: function() {
+        if (this.playerInputs.space) {
+          this._startJump();
+        }
+
+        if (this.jumping) {
+          var y = this.playerCoords.y;
+          var yDiff = 0;
+          var frame = this.jumpFrame;
+          var negative = false;
+          if (frame !== 0) {
+            if (frame < 0) {
+              negative = true;
+              frame *= -1;
+            }
+          }
+          yDiff = Math.sqrt(frame) * 4;
+          if (negative) {
+            yDiff *= -1;
+          }
+          // console.log(this.jumpFrame, frame, yDiff);
+          if (frame > -10) {
+            this.set('jumpFrame', this.jumpFrame - 1);
+          }
+          // console.log(y, yDiff);
+          y -= yDiff;
+
+          // Ground detection
+          if (y > 0) {
+            y = 0;
+            this.set('jumping', false);
+          }
+          this.set('playerCoords.y', y);
+        }
+      },
+
+      _updateCoords: function() {
+        if (!document.hasFocus()) {
+          this._queueNextFrame();
+          this._setAllKeysInactive();
+          return;
+        }
+
+        this._managePlayerX();
+        this._managePlayerY();
+
+        this._queueNextFrame();
+      },
+
+      _queueNextFrame: function() {
+        var _this = this;
+        this.async(function() {
+          _this._updateCoords();
+        }, 15);
+      },
+
+      ready: function() {
+        this._updateCoords();
+      },
+    })
+  </script>
+</dom-module>

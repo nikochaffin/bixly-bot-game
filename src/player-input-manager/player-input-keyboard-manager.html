@@ -1,0 +1,101 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+
+<dom-module id="player-input-keyboard-manager">
+  <template>
+    <style>
+      .key {
+        display: inline-block;
+        border: 1px solid #e0e0e0;
+        width: 20px;
+        line-height: 20px;
+        text-align: center;
+      }
+      .key:first-child {
+        margin-left: 20px;
+      }
+      .key.active {
+        color: #673AB7;
+        border-color: #673AB7;
+      }
+      .key.wide {
+        width: 100px;
+      }
+    </style>
+
+    <iron-a11y-keys
+        id="downKeys"
+        keys="up:keydown down:keydown left:keydown right:keydown space:keydown"
+        on-keys-pressed="_onDirectionDown"></iron-a11y-keys>
+    <iron-a11y-keys
+        id="upKeys"
+        keys="up:keyup down:keyup left:keyup right:keyup space:keyup"
+        on-keys-pressed="_onDirectionUp"></iron-a11y-keys>
+
+    <p style="width:300px;margin:0 auto;">
+      <code class$="[[_getActiveClass(keyboardInputs.up)]] key">&uarr;</code><br>
+      <code class$="[[_getActiveClass(keyboardInputs.left)]] key">&larr;</code><code class$="[[_getActiveClass(keyboardInputs.down)]] key">&darr;</code><code class$="[[_getActiveClass(keyboardInputs.right)]] key">&rarr;</code>
+      <code class$="[[_getActiveClass(keyboardInputs.space)]] key wide">space</code>
+    </p>
+  </template>
+  <script>
+    Polymer({
+      is: 'player-input-keyboard-manager',
+      properties: {
+        keyboardInputs: {
+          type: Object,
+          value: {
+            up: false,
+            down: false,
+            left: false,
+            right: false,
+            space: false,
+          },
+          notify: true,
+        },
+      },
+
+      _getActiveClass: function(val) {
+        if (val === true) {
+          return "active";
+        }
+        return "";
+      },
+
+      _getKeyFromEventName: function(name) {
+        // TODO: need to account for when meta keys are pressed while
+        // releasing other keys
+        var keyNames = {
+          "ArrowUp": 'up',
+          "ArrowDown": 'down',
+          "ArrowLeft": 'left',
+          "ArrowRight": 'right',
+          " ": "space",
+        }
+        return keyNames[name];
+      },
+
+      _onDirectionDown: function(e, detail) {
+        e.preventDefault();
+        var key = this._getKeyFromEventName(detail.keyboardEvent.key);
+        if (key && this.get(['keyboardInputs', key]) !== undefined) {
+          this.set(['keyboardInputs', key], true);
+          this.notifyPath('keyboardInputs.' + key);
+        }
+      },
+
+      _onDirectionUp: function(e, detail) {
+        e.preventDefault();
+        var key = this._getKeyFromEventName(detail.keyboardEvent.key);
+        if (key && this.get(['keyboardInputs', key]) !== undefined) {
+          this.set(['keyboardInputs', key], false);
+          this.notifyPath('keyboardInputs.' + key);
+        }
+      },
+      ready: function() {
+        this.$.upKeys.target = document.querySelector('body');
+        this.$.downKeys.target = document.querySelector('body');
+      },
+    })
+  </script>
+</dom-module>

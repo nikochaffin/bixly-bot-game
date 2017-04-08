@@ -1,0 +1,32 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="player-input-keyboard-manager.html">
+
+<dom-module id="player-input-manager">
+  <template>
+    <player-input-keyboard-manager keyboard-inputs="{{ keyboardInputs }}">
+    </player-input-keyboard-manager>
+  </template>
+  <script>
+    Polymer({
+      is: 'player-input-manager',
+      properties: {
+        keyboardInputs: {
+          type: Object,
+          notify: true,
+        },
+        playerInputs: {
+          type: Object,
+          notify: true,
+        }
+      },
+
+      listeners: {
+        'keyboard-inputs-changed': '_onKeyboardInputsChanged'
+      },
+
+      _onKeyboardInputsChanged: function(e, detail) {
+        this.set('playerInputs', Object.assign({}, this.keyboardInputs));
+      },
+    })
+  </script>
+</dom-module>
